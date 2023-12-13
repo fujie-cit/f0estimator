@@ -1,0 +1,33 @@
+# data settings
+target_name: TC
+csv_labels: ../trainlabel_df.csv
+data_pkl_dir: ../traindata_pkl
+max_label_data_num: 400
+global_stats_normalize: true
+global_stats_filename: ../traindata_global_stats.npz
+
+# model parameters
+model_type: LSTM  # LSTM or SelfAttention
+input_dim: 512
+hidden_dim: 128
+num_layers: 2
+output_dim: 7
+
+# training parameters
+batch_size: 100
+val_batch_size: 10
+num_epochs: 10 # 100
+learning_rate: 0.0001
+num_splits: 20 # 5
+
+# scheduler parameters (see https://timm.fast.ai/SGDR)
+sch_warmup_epochs: 5 # 25
+sch_min_lr: 1e-6
+sch_t_initial: 25 # 70
+
+# device seetings
+device: cuda:0
+
+# random seed
+random_seed: 42
+
