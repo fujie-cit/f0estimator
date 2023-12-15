@@ -144,10 +144,13 @@ def train(model: nn.Module,
 
     best_model_filename = None
 
+    pbar = tqdm.tqdm(total=len(train_datalodader))
+
     while epoch < num_epochs:
         # update learning rate (timm scheduler case)
         scheduler.step(step)
 
+        model.train()
         optimizer.zero_grad()
         f0_loss, df0_loss, vuv_loss = forward_one_step(
             model, frontend, spec_aug, batch, 
@@ -185,6 +188,7 @@ def train(model: nn.Module,
             val_total_vuv_loss = 0
 
             with torch.no_grad():
+                model.eval()
                 for batch in tqdm.tqdm(val_dataloader):
                     f0_loss, df0_loss, vuv_loss = forward_one_step(
                         model, frontend, None, batch,
@@ -234,9 +238,12 @@ def train(model: nn.Module,
 
         step += 1
         batch = next(train_iterator, None)
+        pbar.update(1)
         if batch is None:
             train_iterator = iter(train_datalodader)
             batch = next(train_iterator)
+            pbar.close()
+            pbar = tqdm.tqdm(total=len(train_datalodader))
 
             train_total_f0_loss = 0
             train_total_df0_loss = 0
@@ -248,6 +255,7 @@ def train(model: nn.Module,
                 val_total_vuv_loss = 0
 
                 with torch.no_grad():
+                    model.eval()
                     for batch in tqdm.tqdm(val_dataloader):
                         f0_loss, df0_loss, vuv_loss = forward_one_step(
                             model, frontend, None, batch,

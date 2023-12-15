@@ -1,6 +1,13 @@
+import os
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ['OMP_NUM_THREADS'] = '1'
+os.environ['MKL_NUM_THREADS'] = '1'
+os.environ['VECLIB_MAXIMUM_THREADS'] = '1'
+os.environ['NUMEXPR_NUM_THREADS'] = '1'
+import numpy as np
+
 import yaml
 from os import path
-import os
 import shutil
 import warnings
 import copy
@@ -14,7 +21,7 @@ from timm.scheduler import CosineLRScheduler
 from sklearn.model_selection import GroupKFold
 
 from dataset import WavF0Dataset, collate_wav_f0
-from model import F0EstimationModel
+from model import F0EstimationModelCNN, F0EstimationModelLSTM, F0EstimationModelCBS
 from train import train
 from preprocess import F0DataNormalizer
 
@@ -59,7 +66,7 @@ def main(config_filename, log_dir):
     # train_dataset = Subset(train_dataset, range(1000))
 
     train_dataloader = DataLoader(
-        train_dataset, batch_size=cfg['batch_size'], shuffle=True, collate_fn=collate_wav_f0, num_workers=4)
+        train_dataset, batch_size=cfg['batch_size'], shuffle=True, collate_fn=collate_wav_f0, num_workers=5)
 
     val_wav_scp_filename = cfg['val_wav_scp_filename']
     val_f0data_scp_filename = cfg['val_f0data_scp_filename']
@@ -69,7 +76,16 @@ def main(config_filename, log_dir):
     # val_dataset = Subset(val_dataset, range(100))
     
     val_dataloader = DataLoader(
-        val_dataset, batch_size=cfg['val_batch_size'], shuffle=False, collate_fn=collate_wav_f0, num_workers=4)
+        val_dataset, batch_size=cfg['val_batch_size'], shuffle=False, collate_fn=collate_wav_f0, num_workers=5)
+
+    device = cfg['device']
+
+    # frontend
+    frontend = DefaultFrontend(**cfg['frontend'])
+    frontend = frontend.to(device)
+    spec_aug = SpecAug(**cfg['spec_augment'])
+
+    input_size = cfg['frontend']['n_mels']
 
     # # model settings
     # input_dim = cfg['input_dim']
@@ -81,13 +97,17 @@ def main(config_filename, log_dir):
     learning_rate = cfg['learning_rate']
     
     # construct model and save the initial parameters
-    device = cfg['device']
-    model = F0EstimationModel()
+    model_type = cfg['model_type']
+    if model_type == 'CNN':
+        model = F0EstimationModelCNN(input_size=input_size, **cfg['model_options'])
+    elif model_type == 'LSTM':
+        model = F0EstimationModelLSTM(input_size=input_size, **cfg['model_options'])
+    elif model_type == 'CBS':
+        model = F0EstimationModelCBS(input_size=input_size, **cfg['model_options'])
+    else:
+        raise ValueError(f"model_type {model_type} is not supported.")
+    
     model = model.to(device)
-
-    frontend = DefaultFrontend(**cfg['frontend'])
-    frontend = frontend.to(device)
-    spec_aug = SpecAug(**cfg['spec_augment'])
 
     f0data_stats_filename = cfg['train_f0data_stats_filename']
     f0data_normalizer = F0DataNormalizer(f0data_stats_filename)

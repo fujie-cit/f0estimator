@@ -1,0 +1,57 @@
+# f0 extraction settings
+dio:
+  fs: 16000
+  n_fft: 1024
+  hop_length: 128
+  use_log_f0: True
+  num_sub: 4
+
+# fontend settings
+frontend:
+  fs: 16000       # 音声信号のサンプリング周波数
+  n_fft: 1024     # 短時間フーリエ変換 (STFT) のフレームサイズ
+  hop_length: 128 # フレームの間隔．128は8ms（小林研究室標準）
+  win_length: 800 # フレームの窓幅．800は50ms（F0抽出のためにはこの程度の解像度が必要）
+  n_mels: 80      # メルフィルタバンクの数．80と160で比較する
+
+# spec_augment settings
+spec_augment:
+  time_mask_width_ratio_range:
+    - 0.0
+    - 0.1
+  apply_time_warp: true
+  time_warp_window: 5
+
+model_type: CNN # CNN/LSTM/CBS
+model_options:
+  hidden_size: 128
+  num_hidden_layers: 2
+  dropout_rate: 0.2
+
+# data settings
+train_wav_scp_filename:      ./dump/raw/train_nodup/wav.scp
+train_f0data_dir:            ./f0data/train_nodup/data
+train_f0data_scp_filename:   ./f0data/train_nodup/f0data.scp
+train_f0data_stats_filename: ./f0data/train_nodup/f0data_stats.txt
+
+val_wav_scp_filename:        ./dump/raw/train_dev/wav.scp
+val_f0data_dir:              ./f0data/train_dev/data
+val_f0data_scp_filename:     ./f0data/train_dev/f0data.scp
+# val_f0data_stats_filename:   ./f0data/train_dev/f0data_stats.txt
+
+# training parameters
+batch_size:     10
+val_batch_size: 10
+num_epochs:     3   # 経験上2エポックまわる前に収束する
+learning_rate:  0.0001
+
+# scheduler parameters (see https://timm.fast.ai/SGDR)
+sch_warmup_epochs: 10000 # 今回の実験ではステップで更新させている
+sch_min_lr: 1e-6
+sch_t_initial: 40000 # 70
+
+# device seetings
+device: cuda:0
+
+# random seed
+random_seed: 42
