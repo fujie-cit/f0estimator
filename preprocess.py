@@ -6,7 +6,7 @@ class F0DataNormalizer(object):
     """F0DataNormalizer
     """
 
-    def __init__(self, f0data_stats_filename):
+    def __init__(self, f0data_stats_filename, sigma_coeff=2.0):
         """
         Args:
             f0data_stats_filename (str): f0data_stats_filename
@@ -28,14 +28,14 @@ class F0DataNormalizer(object):
         # data_upper = np.percentile(data[:, :3], 95, axis=0)
         # data_lower = np.percentile(data[:, :3], 5, axis=0)
         # data_std = data_upper - data_lower + data[:, 3:6].mean(axis=0)
+        # data_std /= 2.0
 
         # 全体分散の計算
         data_var = data[:, :3].var(axis=0) + (data[:, 3:6] ** 2).mean(axis=0)
         # 全体標準偏差の計算
         data_std = np.sqrt(data_var)
-
-        # # 男女の差が大きいので2σでとる
-        # data_std = data_std * 2
+        # # 少し狭すぎるので補正
+        # data_std = data_std * sigma_coeff
 
         # import ipdb; ipdb.set_trace()
 

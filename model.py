@@ -19,6 +19,7 @@ class F0EstimationModelCNN(torch.nn.Module):
             kernels=[3, 3], 
             strides=[2, 2]
         )
+        self.layer_norm = nn.LayerNorm(hidden_size)
         hidden_layers = []
         for _ in range(num_hidden_layers):
             hidden_layers += [
@@ -34,6 +35,7 @@ class F0EstimationModelCNN(torch.nn.Module):
         # embedding
         masks = (~make_pad_mask(lengths)[:, None, :]).to(x.device)
         x, masks = self.embed(x, masks)
+        x = self.layer_norm(x)
         # hidden layers
         x = x.transpose(1, 2)
         x = self.hidden_layer(x)
@@ -62,6 +64,7 @@ class F0EstimationModelLSTM(torch.nn.Module):
             kernels=[3, 3], 
             strides=[2, 2]
         )
+        self.layer_norm = nn.LayerNorm(hidden_size)
         self.lstm = nn.LSTM(hidden_size, hidden_size, num_hidden_layers, dropout=dropout_rate, batch_first=True, bidirectional=False)
         self.fc = nn.Conv1d(in_channels=hidden_size, out_channels=hidden_size, kernel_size=1)
         self.out = nn.Conv1d(in_channels=hidden_size, out_channels=3, kernel_size=1)
@@ -70,6 +73,7 @@ class F0EstimationModelLSTM(torch.nn.Module):
         # embedding
         masks = (~make_pad_mask(lengths)[:, None, :]).to(x.device)
         x, masks = self.embed(x, masks)
+        x = self.layer_norm(x)
         
         # LSTM
         lstm_out, (hn, cn) = self.lstm(x)

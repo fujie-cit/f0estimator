@@ -42,13 +42,15 @@ val_f0data_scp_filename:     ./f0data/train_dev/f0data.scp
 # training parameters
 batch_size:     10
 val_batch_size: 10
-num_epochs:     3   # 経験上2エポックまわる前に収束する
+num_epochs:     2   # 経験上2エポックまわる前に収束する
 learning_rate:  0.0001
 
 # scheduler parameters (see https://timm.fast.ai/SGDR)
-sch_warmup_epochs: 10000 # 今回の実験ではステップで更新させている
-sch_min_lr: 1e-6
-sch_t_initial: 40000 # 70
+sch_warmup_epochs:  5000  # 今回はステップで更新
+sch_min_lr:         1e-6
+sch_t_initial:      10000 #
+
+
 
 # device seetings
 device: cuda:0

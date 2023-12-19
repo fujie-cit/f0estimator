@@ -9,10 +9,10 @@ dio:
 # fontend settings
 frontend:
   fs: 16000       # 音声信号のサンプリング周波数
-  n_fft: 1024     # 短時間フーリエ変換 (STFT) のフレームサイズ
+  n_fft: 512     # 短時間フーリエ変換 (STFT) のフレームサイズ
   hop_length: 128 # フレームの間隔．128は8ms（小林研究室標準）
-  win_length: 800 # フレームの窓幅．800は50ms（F0抽出のためにはこの程度の解像度が必要）
-  n_mels: 160      # メルフィルタバンクの数．80と160で比較する
+  win_length: 400 # フレームの窓幅．800は50ms（F0抽出のためにはこの程度の解像度が必要）
+  n_mels: 80      # メルフィルタバンクの数．80と160で比較する
 
 # spec_augment settings
 spec_augment:
@@ -22,7 +22,7 @@ spec_augment:
   apply_time_warp: true
   time_warp_window: 5
 
-model_type: LSTM # CNN/LSTM/CBS
+model_type: CNN # CNN/LSTM/CBS
 model_options:
   hidden_size: 128
   num_hidden_layers: 2
@@ -49,6 +49,7 @@ learning_rate:  0.0001
 sch_warmup_epochs:  5000  # 今回はステップで更新
 sch_min_lr:         1e-6
 sch_t_initial:      10000 #
+
 
 # device seetings
 device: cuda:0

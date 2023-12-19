@@ -1,9 +1,9 @@
 import os
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
-os.environ['OMP_NUM_THREADS'] = '1'
-os.environ['MKL_NUM_THREADS'] = '1'
-os.environ['VECLIB_MAXIMUM_THREADS'] = '1'
-os.environ['NUMEXPR_NUM_THREADS'] = '1'
+# os.environ['OPENBLAS_NUM_THREADS'] = '1'
+# os.environ['OMP_NUM_THREADS'] = '1'
+# os.environ['MKL_NUM_THREADS'] = '1'
+# os.environ['VECLIB_MAXIMUM_THREADS'] = '1'
+# os.environ['NUMEXPR_NUM_THREADS'] = '1'
 import numpy as np
 
 import yaml
@@ -66,7 +66,7 @@ def main(config_filename, log_dir):
     # train_dataset = Subset(train_dataset, range(1000))
 
     train_dataloader = DataLoader(
-        train_dataset, batch_size=cfg['batch_size'], shuffle=True, collate_fn=collate_wav_f0, num_workers=5)
+        train_dataset, batch_size=cfg['batch_size'], shuffle=True, collate_fn=collate_wav_f0, num_workers=2)
 
     val_wav_scp_filename = cfg['val_wav_scp_filename']
     val_f0data_scp_filename = cfg['val_f0data_scp_filename']
@@ -76,7 +76,7 @@ def main(config_filename, log_dir):
     # val_dataset = Subset(val_dataset, range(100))
     
     val_dataloader = DataLoader(
-        val_dataset, batch_size=cfg['val_batch_size'], shuffle=False, collate_fn=collate_wav_f0, num_workers=5)
+        val_dataset, batch_size=cfg['val_batch_size'], shuffle=False, collate_fn=collate_wav_f0, num_workers=2)
 
     device = cfg['device']
 
@@ -119,7 +119,9 @@ def main(config_filename, log_dir):
     sch_t_initial = cfg['sch_t_initial']
     scheduler = CosineLRScheduler(optimizer, 
             t_initial=sch_t_initial, lr_min=sch_min_lr, warmup_t=sch_warmup_epochs, 
-            warmup_lr_init=1e-7, warmup_prefix=True)
+            warmup_lr_init=1e-7, warmup_prefix=True, 
+            cycle_mul=1, cycle_decay=1.0, cycle_limit=65535)
+    # scheduler = None
 
     # train
     num_epochs = cfg['num_epochs']

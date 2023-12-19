@@ -26,7 +26,10 @@ def forward_one_step(model: nn.Module,
                      vuv_criterion: nn.Module,
                      device='cpu',
                      f0data_normalizer=None,
-                     f0_target_column=2,):
+                     f0_target_column=2,
+                     f0_loss_weight=1.0,
+                     df0_loss_weight=1.0,
+                     vuv_loss_weight=1.0,):
     wav = batch['wav']
     wav_lengths = batch['wav_lengths']
 
@@ -36,7 +39,7 @@ def forward_one_step(model: nn.Module,
     f0data = batch['f0data']
     f0data_lengths = batch['f0data_lengths']
 
-    vuv_target = (f0data[:, :, 0] > 0).float()
+    vuv_target = (f0data[:, :, f0_target_column] > 0).float()
 
     if f0data_normalizer is not None:
         f0data = f0data_normalizer.normalize(f0data)
@@ -66,11 +69,12 @@ def forward_one_step(model: nn.Module,
     pred_lengths = pred_lengths.clamp(max=f0_pred.shape[1])
 
     # lossを計算するためのマスクを生成する
-    # f0, df0 に関しては，f0data_lengthsの範囲，かつ f0 が 0 でないところがTrue
+    # f0, df0 に関しては，f0data_lengthsの範囲，かつ vuv_target が 1 の範囲が True
     # それ以外は False
     f0_mask = torch.zeros_like(f0_target)
     for i in range(f0_target.shape[0]):
-        f0_mask[i, :pred_lengths[i]] = f0_target[i, :pred_lengths[i]] > 0
+        # f0_mask[i, :pred_lengths[i]] = f0_target[i, :pred_lengths[i]] > 0
+        f0_mask[i, :pred_lengths[i]] = vuv_target[i, :pred_lengths[i]] > 0
     f0_mask = f0_mask.bool()
     # vuv に関しては，f0data_lengthsの範囲がTrue
     vuv_mask = torch.zeros_like(vuv_target)
@@ -78,18 +82,18 @@ def forward_one_step(model: nn.Module,
         vuv_mask[i, :pred_lengths[i]] = 1
     vuv_mask = vuv_mask.bool()
 
-    f0_count = f0_mask.sum().item()
-    df0_count = f0_mask.sum().item()
-    vuv_count = vuv_mask.sum().item()
+    # f0_count = f0_mask.sum().item()
+    # df0_count = f0_mask.sum().item()
+    # vuv_count = vuv_mask.sum().item()
 
     f0_target = f0_target.to(device)
-    f0_loss = f0_criterion(f0_pred, f0_target)[f0_mask].sum() / f0_count
+    f0_loss = f0_criterion(f0_pred, f0_target)[f0_mask].mean() * f0_loss_weight
     
     df0_target = df0_target.to(device)
-    df0_loss = df0_critetion(df0_pred, df0_target)[f0_mask].sum() / df0_count
+    df0_loss = df0_critetion(df0_pred, df0_target)[f0_mask].mean() * df0_loss_weight
     
     vuv_target = vuv_target.to(device)
-    vuv_loss = vuv_criterion(vuv_pred, vuv_target)[vuv_mask].sum() / vuv_count
+    vuv_loss = vuv_criterion(vuv_pred, vuv_target)[vuv_mask].mean() * vuv_loss_weight
 
     # import ipdb; ipdb.set_trace()
 
@@ -111,8 +115,10 @@ def train(model: nn.Module,
           f0data_normalizer=None,
           f0_target_column=2,):
     
-    f0_criterion = nn.MSELoss(reduction='none')
-    df0_critetion = nn.MSELoss(reduction='none')
+    # f0_criterion = nn.MSELoss(reduction='none')
+    # df0_critetion = nn.MSELoss(reduction='none')
+    f0_criterion = nn.L1Loss(reduction='none')
+    df0_critetion = nn.L1Loss(reduction='none')
     vuv_criterion = nn.BCEWithLogitsLoss(reduction='none')
 
     log_filename = path.join(log_dir_path, 'log.txt')
@@ -148,7 +154,8 @@ def train(model: nn.Module,
 
     while epoch < num_epochs:
         # update learning rate (timm scheduler case)
-        scheduler.step(step)
+        if scheduler is not None:
+            scheduler.step(step)
 
         model.train()
         optimizer.zero_grad()
