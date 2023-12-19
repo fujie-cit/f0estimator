@@ -1,3 +1,11 @@
+import os
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ['OMP_NUM_THREADS'] = '1'
+os.environ['MKL_NUM_THREADS'] = '1'
+os.environ['VECLIB_MAXIMUM_THREADS'] = '1'
+os.environ['NUMEXPR_NUM_THREADS'] = '1'
+import numpy as np
+
 
 import yaml
 from torch.utils.data import DataLoader
@@ -40,9 +48,10 @@ def main(config_filename):
         for i in tqdm.tqdm(range(num_data)):
             utt_id, data = dataset[i]
             wav = torch.tensor(data["wav"]).unsqueeze(0)
-            wav_length = torch.tensor([len(wav)]).int()
+            wav_length = torch.tensor([wav.shape[1]]).int()
             feats, _ = frontend(wav, wav_length)
             npy_scp_writer[utt_id] = feats[0].cpu().numpy()
+            # import ipdb; ipdb.set_trace()
 
 
 if __name__ == '__main__':
